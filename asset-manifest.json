@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/thesis-evaluation/static/css/main.0e403b02.css",
+    "main.js": "/thesis-evaluation/static/js/main.0476f021.js",
+    "static/js/453.462f0635.chunk.js": "/thesis-evaluation/static/js/453.462f0635.chunk.js",
+    "index.html": "/thesis-evaluation/index.html",
+    "main.0e403b02.css.map": "/thesis-evaluation/static/css/main.0e403b02.css.map",
+    "main.0476f021.js.map": "/thesis-evaluation/static/js/main.0476f021.js.map",
+    "453.462f0635.chunk.js.map": "/thesis-evaluation/static/js/453.462f0635.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0e403b02.css",
+    "static/js/main.0476f021.js"
+  ]
+}
