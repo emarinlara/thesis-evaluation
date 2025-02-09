@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/thesis-evaluation/static/css/main.826400f9.css",
-    "main.js": "/thesis-evaluation/static/js/main.28fadcef.js",
+    "main.css": "/thesis-evaluation/static/css/main.7a24e770.css",
+    "main.js": "/thesis-evaluation/static/js/main.c969339b.js",
     "static/js/453.462f0635.chunk.js": "/thesis-evaluation/static/js/453.462f0635.chunk.js",
     "index.html": "/thesis-evaluation/index.html",
-    "main.826400f9.css.map": "/thesis-evaluation/static/css/main.826400f9.css.map",
-    "main.28fadcef.js.map": "/thesis-evaluation/static/js/main.28fadcef.js.map",
+    "main.7a24e770.css.map": "/thesis-evaluation/static/css/main.7a24e770.css.map",
+    "main.c969339b.js.map": "/thesis-evaluation/static/js/main.c969339b.js.map",
     "453.462f0635.chunk.js.map": "/thesis-evaluation/static/js/453.462f0635.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.826400f9.css",
-    "static/js/main.28fadcef.js"
+    "static/css/main.7a24e770.css",
+    "static/js/main.c969339b.js"
   ]
 }
