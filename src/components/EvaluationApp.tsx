@@ -1,161 +1,148 @@
-// src/components/EvaluationApp.tsx
-import React, { useState, useRef } from 'react';
-import { FileText } from 'lucide-react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
+import { Alert } from './ui/alert';
 
-// Types
-interface FormData {
-  studentName: string;
-  professors: string[];
-  confirmations: boolean[];
-  password: string;
+interface Professor {
+  name: string;
+  hasReadThesis: boolean;
 }
 
 interface Evaluation {
-  presentacion: keyof typeof valueWeights | null;
-  investigacion: keyof typeof valueWeights | null;
-  proyecto: keyof typeof valueWeights | null;
+  presentacion: string;
+  investigacion: string;
+  proyecto: string;
+  notes: string;
 }
 
-interface Evaluations {
-  first: Evaluation;
-  second: Evaluation;
-}
+const EvaluationApp: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [evaluation, setEvaluation] = useState({
+    studentName: '',
+    professors: Array(3).fill({ name: '', hasReadThesis: false }),
+    firstPresentation: {
+      presentacion: '',
+      investigacion: '',
+      proyecto: '',
+      notes: ''
+    },
+    secondPresentation: {
+      presentacion: '',
+      investigacion: '',
+      proyecto: '',
+      notes: ''
+    }
+  });
+  const [error, setError] = useState<string | null>(null);
 
-interface Notes {
-  first: string;
-  second: string;
-}
-
-const criteriaWeights = {
-  presentacion: 0.20,
-  investigacion: 0.30,
-  proyecto: 0.50
-} as const;
-
-const valueWeights = {
-  insuficiente: 0.40,
-  suficiente: 0.70,
-  bueno: 0.80,
-  excelente: 1.00
-} as const;
-
-interface ProgressBarProps {
-  score: number;
-}
-
-const ProgressBar: React.FC<ProgressBarProps> = ({ score }) => {
-  const barWidth = `${score}%`;
-  const isApproved = score >= 80;
-  
-  return (
-    <div className="mt-6">
-      <div className="flex justify-between items-center mb-2">
-        <span className="font-semibold">Progreso hacia aprobación</span>
-        <span className={`font-bold ${isApproved ? 'text-green-600' : 'text-amber-500'}`}>
-          {score.toFixed(1)}%
-        </span>
-      </div>
-      <div className="w-full h-6 bg-gray-200 rounded-full relative">
-        <div
-          className="absolute top-0 bottom-0 w-0.5 bg-red-500"
-          style={{ left: '80%' }}
-        >
-          <span className="absolute -top-6 -translate-x-1/2 text-xs text-red-500">80%</span>
-        </div>
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${
-            isApproved ? 'bg-green-500' : 'bg-amber-500'
-          }`}
-          style={{ width: barWidth }}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface ResultsAlertProps {
-  score: number;
-  title: string;
-  isPartial?: boolean;
-}
-
-const ResultsAlert: React.FC<ResultsAlertProps> = ({ score, title, isPartial = false }) => {
-  return (
-    <div className="mt-8 p-4 bg-white border rounded-lg shadow">
-      <h3 className="text-lg font-bold">{title}</h3>
-      <div>
-        <p className="font-bold mt-2">
-          Puntaje: {score.toFixed(2)}%
-        </p>
-        <ProgressBar score={score} />
-        {!isPartial && (
-          <p className="mt-4">
-            {score >= 80
-              ? "El estudiante ha ganado el derecho de pasar a su presentación privada de tesis."
-              : "El estudiante no ha alcanzado el puntaje mínimo requerido (80%) para pasar a la presentación privada."}
-          </p>
-        )}
-        {isPartial && (
-          <p className="mt-4 text-amber-600">
-            Este es un resultado parcial. La calificación final se calculará después de la segunda presentación,
-            donde esta primera nota representará el 40% de la nota final.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface EvaluationTableProps {
-  phase: 'first' | 'second';
-  evaluation: Evaluation;
-  setEvaluation: React.Dispatch<React.SetStateAction<Evaluations>>;
-}
-
-const EvaluationTable: React.FC<EvaluationTableProps> = ({ phase, evaluation, setEvaluation }) => {
-  const options = ['insuficiente', 'suficiente', 'bueno', 'excelente'] as const;
-  const criterios = {
-    presentacion: 'Presentación',
-    investigacion: 'Investigación',
-    proyecto: 'Proyecto'
+  const handlePasswordSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (
+      password === 'pfg1c25' &&
+      evaluation.studentName.trim() !== '' &&
+      evaluation.professors.every(p => p.name.trim() !== '' && p.hasReadThesis)
+    ) {
+      setIsAuthenticated(true);
+      setError(null);
+    } else {
+      setError('Por favor complete todos los campos y confirme la lectura del documento');
+    }
   };
 
-  return (
+  const handleStudentNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEvaluation(prev => ({
+      ...prev,
+      studentName: e.target.value
+    }));
+  };
+
+  const handleProfessorChange = (index: number, field: keyof Professor, value: string | boolean) => {
+    setEvaluation(prev => ({
+      ...prev,
+      professors: prev.professors.map((prof, i) =>
+        i === index ? { ...prof, [field]: value } : prof
+      )
+    }));
+  };
+
+  const handleEvaluationChange = (
+    presentation: 'firstPresentation' | 'secondPresentation',
+    field: keyof Evaluation,
+    value: string
+  ) => {
+    setEvaluation(prev => ({
+      ...prev,
+      [presentation]: {
+        ...prev[presentation],
+        [field]: value
+      }
+    }));
+  };
+
+  const calculateScore = (presentation: Evaluation) => {
+    const weights = {
+      insuficiente: 40,
+      suficiente: 70,
+      bueno: 80,
+      excelente: 100
+    };
+
+    const criteriaWeights = {
+      presentacion: 0.2,
+      investigacion: 0.3,
+      proyecto: 0.5
+    };
+
+    let total = 0;
+    for (const [criteria, value] of Object.entries(presentation)) {
+      if (criteria !== 'notes' && value in weights) {
+        const criteriaWeight = criteriaWeights[criteria as keyof typeof criteriaWeights];
+        total += weights[value as keyof typeof weights] * criteriaWeight;
+      }
+    }
+    return total;
+  };
+
+  const calculateFinalScore = () => {
+    const firstScore = calculateScore(evaluation.firstPresentation);
+    const secondScore = calculateScore(evaluation.secondPresentation);
+    return (firstScore * 0.4) + (secondScore * 0.6);
+  };
+
+  const EvaluationTable: React.FC<{
+    title: string;
+    presentation: 'firstPresentation' | 'secondPresentation';
+  }> = ({ title, presentation }) => (
     <div className="mt-8">
-      <h3 className="text-xl font-bold mb-4">
-        Evaluación {phase === 'first' ? 'primera' : 'segunda'} presentación
-      </h3>
-      <table className="w-full border-collapse">
+      <h2 className="text-xl font-semibold mb-4">{title}</h2>
+      <table className="w-full border-collapse border">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 border">Criterio</th>
-            {options.map(option => (
-              <th key={option} className="p-2 border capitalize">
-                {option.charAt(0).toUpperCase() + option.slice(1)} ({(valueWeights[option] * 100)}%)
-              </th>
-            ))}
+          <tr>
+            <th className="border p-2">Criterio</th>
+            <th className="border p-2">Insuficiente (40%)</th>
+            <th className="border p-2">Suficiente (70%)</th>
+            <th className="border p-2">Bueno (80%)</th>
+            <th className="border p-2">Excelente (100%)</th>
           </tr>
         </thead>
         <tbody>
-          {(Object.entries(criteriaWeights) as [keyof typeof criteriaWeights, number][]).map(([criterion, weight]) => (
-            <tr key={criterion}>
-              <td className="p-2 border">
-                {criterios[criterion]} ({weight * 100}%)
-              </td>
-              {options.map(option => (
-                <td key={option} className="p-2 border text-center">
+          {[
+            { key: 'presentacion', label: 'Presentación (20%)' },
+            { key: 'investigacion', label: 'Investigación (30%)' },
+            { key: 'proyecto', label: 'Proyecto (50%)' }
+          ].map(({ key, label }) => (
+            <tr key={key}>
+              <td className="border p-2 font-medium">{label}</td>
+              {['insuficiente', 'suficiente', 'bueno', 'excelente'].map((value) => (
+                <td key={value} className="border p-2 text-center">
                   <input
                     type="radio"
-                    name={`${phase}-${criterion}`}
-                    checked={evaluation[criterion] === option}
-                    onChange={() => {
-                      const newEvaluation = { ...evaluation };
-                      newEvaluation[criterion] = option;
-                      setEvaluation(prev => ({
-                        ...prev,
-                        [phase]: newEvaluation
-                      }));
-                    }}
+                    name={`${presentation}-${key}`}
+                    value={value}
+                    checked={evaluation[presentation][key as keyof Evaluation] === value}
+                    onChange={() => handleEvaluationChange(presentation, key as keyof Evaluation, value)}
                   />
                 </td>
               ))}
@@ -163,102 +150,119 @@ const EvaluationTable: React.FC<EvaluationTableProps> = ({ phase, evaluation, se
           ))}
         </tbody>
       </table>
-    </div>
-  );
-};
-
-interface PDFReportProps {
-  studentName: string;
-  professors: string[];
-  evaluation: Evaluation;
-  notes: string;
-  score: number;
-  phase: 'first' | 'second';
-}
-
-const PDFReport: React.FC<PDFReportProps> = ({ studentName, professors, evaluation, notes, score, phase }) => {
-  const reportRef = useRef<HTMLDivElement>(null);
-  
-  const generatePDF = () => {
-    const content = reportRef.current;
-    if (!content) return;
-    
-    content.style.width = '800px';
-    content.style.padding = '40px';
-    content.style.background = 'white';
-    
-    window.print();
-    
-    content.style.width = 'auto';
-    content.style.padding = '0';
-  };
-  
-  return (
-    <div>
-      <button
-        onClick={generatePDF}
-        className="mt-4 mb-8 px-4 py-2 border rounded hover:bg-gray-50 inline-flex items-center"
-      >
-        <FileText className="w-4 h-4 mr-2" />
-        Generar Reporte PDF {phase === 'first' ? 'Primera' : 'Segunda'} Presentación
-      </button>
-      
-      <div className="hidden print:block" ref={reportRef}>
-        {/* PDF content remains the same */}
+      <div className="mt-4">
+        <label className="block mb-2">Anotaciones:</label>
+        <textarea
+          className="w-full p-2 border rounded"
+          rows={4}
+          value={evaluation[presentation].notes}
+          onChange={(e) => handleEvaluationChange(presentation, 'notes', e.target.value)}
+        />
       </div>
     </div>
   );
-};
 
-interface EvaluationFormProps {
-  formData: FormData;
-  setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-  handleLogin: (e: React.FormEvent) => void;
-}
+  if (!isAuthenticated) {
+    return (
+      <Card>
+        <CardContent>
+          <form onSubmit={handlePasswordSubmit} className="space-y-6">
+            <h1 className="text-2xl font-bold mb-6">Comité de Tesis - Inicio de Sesión</h1>
+            
+            <Input
+              label="Nombre del Estudiante"
+              type="text"
+              value={evaluation.studentName}
+              onChange={handleStudentNameChange}
+              placeholder="Ingrese el nombre del estudiante"
+              required
+            />
 
-const EvaluationForm: React.FC<EvaluationFormProps> = ({ formData, setFormData, handleLogin }) => {
+            {evaluation.professors.map((professor, index) => (
+              <div key={index} className="space-y-2">
+                <Input
+                  label={`Profesor Lector ${index + 1}`}
+                  type="text"
+                  value={professor.name}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    handleProfessorChange(index, 'name', e.target.value)
+                  }
+                  placeholder={`Nombre del Profesor ${index + 1}`}
+                  required
+                />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={professor.hasReadThesis}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      handleProfessorChange(index, 'hasReadThesis', e.target.checked)
+                    }
+                    className="rounded border-gray-300"
+                  />
+                  <label className="text-sm text-gray-700">
+                    Confirmo que he leído el documento de Tesis del estudiante
+                  </label>
+                </div>
+              </div>
+            ))}
+
+            <Input
+              label="Contraseña"
+              type="password"
+              value={password}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              placeholder="Ingrese la contraseña"
+              required
+            />
+
+            {error && (
+              <Alert className="mt-4 text-red-600">
+                {error}
+              </Alert>
+            )}
+
+            <Button type="submit" className="w-full">
+              Ingresar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-6">Acceso al Sistema de Evaluación de Tesis</h2>
-      <form onSubmit={handleLogin} className="space-y-4">
-        {/* Form content remains the same but uses standard HTML inputs */}
-      </form>
-    </div>
-  );
-};
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-3xl font-bold mb-2">{evaluation.studentName}</h1>
+      <div className="text-gray-600 mb-6">
+        <h3 className="font-semibold mb-2">Profesores Lectores:</h3>
+        {evaluation.professors.map((professor, index) => (
+          <div key={index}>{professor.name}</div>
+        ))}
+      </div>
 
-const EvaluationApp: React.FC = () => {
-  const [step, setStep] = useState<'login' | 'evaluation'>('login');
-  const [formData, setFormData] = useState<FormData>({
-    studentName: '',
-    professors: ['', '', ''],
-    confirmations: [false, false, false],
-    password: ''
-  });
-  
-  const [evaluations, setEvaluations] = useState<Evaluations>({
-    first: {
-      presentacion: null,
-      investigacion: null,
-      proyecto: null
-    },
-    second: {
-      presentacion: null,
-      investigacion: null,
-      proyecto: null
-    }
-  });
+      <EvaluationTable
+        title="Evaluación Primera Presentación (40%)"
+        presentation="firstPresentation"
+      />
 
-  const [notes, setNotes] = useState<Notes>({
-    first: '',
-    second: ''
-  });
+      <EvaluationTable
+        title="Evaluación Segunda Presentación (60%)"
+        presentation="secondPresentation"
+      />
 
-  // Rest of the component implementation remains the same
-  
-  return (
-    <div className="max-w-4xl mx-auto p-4">
-      {/* Component JSX remains the same */}
+      {(evaluation.firstPresentation.presentacion && evaluation.secondPresentation.presentacion) && (
+        <div className="mt-8 p-4 bg-gray-100 rounded">
+          <h2 className="text-xl font-bold mb-2">Resultado Final</h2>
+          <p className="text-lg">
+            Calificación Final: {calculateFinalScore().toFixed(2)}%
+          </p>
+          <p className="text-lg font-semibold mt-2">
+            {calculateFinalScore() >= 80
+              ? "El estudiante ha ganado el derecho de pasar a su presentación privada de tesis."
+              : "El estudiante no ha alcanzado el puntaje mínimo requerido (80%) para pasar a la presentación privada de tesis."}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
